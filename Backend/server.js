@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const healthRoutes = require('./routes/HealthRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +21,8 @@ app.use(cors());
 
 // Routes
 app.use('/api/users', userRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api', chatRoutes);
 
 app.get('/', (req, res) => {
     res.send("Hello from backend");

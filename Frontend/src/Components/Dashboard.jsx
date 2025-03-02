@@ -243,45 +243,6 @@ const Dashboard = () => {
         </button>
       </div>
       
-      {/* Health Metric Cards */}
-      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <HealthCard 
-          title="Heart Rate" 
-          value={healthData?.heartRate.value || mockHealthData.heartRate.value} 
-          unit={healthData?.heartRate.unit || mockHealthData.heartRate.unit} 
-          status={healthData?.heartRate.status || mockHealthData.heartRate.status}
-          icon={<Heart size={24} />}
-          onClick={() => setActiveMetric('heartRate')}
-          active={activeMetric === 'heartRate'}
-        />
-        <HealthCard 
-          title="Blood Pressure" 
-          value={`${healthData?.bloodPressure.systolic || mockHealthData.bloodPressure.systolic}/${healthData?.bloodPressure.diastolic || mockHealthData.bloodPressure.diastolic}`} 
-          unit="mmHg" 
-          status={healthData?.bloodPressure.status || mockHealthData.bloodPressure.status}
-          icon={<Activity size={24} />}
-          onClick={() => setActiveMetric('bloodPressure')}
-          active={activeMetric === 'bloodPressure'}
-        />
-        <HealthCard 
-          title="Blood Sugar" 
-          value={healthData?.bloodSugar.value || mockHealthData.bloodSugar.value} 
-          unit={healthData?.bloodSugar.unit || mockHealthData.bloodSugar.unit} 
-          status={healthData?.bloodSugar.status || mockHealthData.bloodSugar.status}
-          icon={<Thermometer size={24} />}
-          onClick={() => setActiveMetric('bloodSugar')}
-          active={activeMetric === 'bloodSugar'}
-        />
-        <HealthCard 
-          title="Calories Burned" 
-          value={healthData?.caloriesBurned.value || mockHealthData.caloriesBurned.value} 
-          unit={healthData?.caloriesBurned.unit || mockHealthData.caloriesBurned.unit} 
-          status={healthData?.caloriesBurned.status || mockHealthData.caloriesBurned.status}
-          icon={<TrendingUp size={24} />}
-          onClick={() => setActiveMetric('caloriesBurned')}
-          active={activeMetric === 'caloriesBurned'}
-        />
-      </div> */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {/* Heart Rate Card */}
           <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center">

@@ -69,46 +69,77 @@ const Signup = () => {
   };
 
   // Handle form submission
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+    
+  //   if (validateForm()) {
+  //     setIsLoading(true);
+      
+  //     try {
+  //       // Simulate API call
+  //       setTimeout(() => {
+  //         console.log('Form submitted:', formData);
+  //         setIsLoading(false);
+  //         // Redirect to login page or dashboard
+  //         alert('Account created successfully! Redirecting to login...');
+  //         // window.location.href = '/login';
+  //       }, 1500);
+        
+  //       // Actual API implementation would look like:
+  //       /*
+  //       const response = await fetch('/api/signup', {
+  //         method: 'POST',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //         },
+  //         body: JSON.stringify(formData),
+  //       });
+        
+  //       const data = await response.json();
+        
+  //       if (response.ok) {
+  //         // Redirect to login or dashboard
+  //       } else {
+  //         setErrors({ api: data.message });
+  //       }
+  //       */
+  //     } catch (error) {
+  //       setIsLoading(false);
+  //       setErrors({ api: 'An error occurred. Please try again.' });
+  //     }
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (validateForm()) {
+
+    if(validateForm()){
       setIsLoading(true);
-      
-      try {
-        // Simulate API call
-        setTimeout(() => {
-          console.log('Form submitted:', formData);
-          setIsLoading(false);
-          // Redirect to login page or dashboard
-          alert('Account created successfully! Redirecting to login...');
-          // window.location.href = '/login';
-        }, 1500);
-        
-        // Actual API implementation would look like:
-        /*
-        const response = await fetch('/api/signup', {
+
+      try{
+        const response = await fetch('http://localhost:4000/api/users/register', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(formData),
         });
-        
+
         const data = await response.json();
-        
-        if (response.ok) {
-          // Redirect to login or dashboard
-        } else {
-          setErrors({ api: data.message });
+
+        if(response.ok){
+          alert('Account created successfully');
+          window.location.href = '/signin';
+        }else{
+          setErrors({api: data.message});
         }
-        */
-      } catch (error) {
+      }catch(error){
+        setErrors({api: 'An error occurred.  Please try again.'});
+      }finally{
         setIsLoading(false);
-        setErrors({ api: 'An error occurred. Please try again.' });
       }
     }
-  };
+  }
 
   // Handle social signup
   const handleSocialSignup = (provider) => {

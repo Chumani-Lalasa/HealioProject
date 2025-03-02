@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import MarkdownIt from "markdown-it";
 import Base64 from "base64-js";
@@ -88,28 +88,62 @@ const SkinDiseaseAnalyzer = () => {
 
       const result = await model.generateContentStream({ contents });
 
-      let buffer = [];
+      // let buffer = [];
+      // for await (let response of result.stream) {
+      //   buffer.push(response.text());
+        
+      //   // Try to parse the markdown response into sections
+      //   const text = buffer.join("");
+        
+      //   // Extract sections using regex
+      //   const diagnosisMatch = text.match(/🩺\s*\*\*Diagnosis\*\*:\s*(.*?)(?=🚑|\n\n|$)/s);
+      //   const measuresMatch = text.match(/🚑\s*\*\*Immediate Measures\*\*:(.*?)(?=🛡|\n\n|$)/s);
+      //   const preventionMatch = text.match(/🛡\s*\*\*Long-Term Prevention\*\*:(.*?)(?=🥗|\n\n|$)/s);
+      //   const dietMatch = text.match(/🥗\s*\*\*Recommended Diet\*\*:(.*?)(?=\n\n|$)/s);
+        
+      //   // Update state with parsed sections
+      //   setResults({
+      //     diagnosis: diagnosisMatch ? diagnosisMatch[1].trim() : "Analyzing...",
+      //     measures: measuresMatch ? measuresMatch[1] : "Analyzing...",
+      //     prevention: preventionMatch ? preventionMatch[1] : "Analyzing...",
+      //     diet: dietMatch ? dietMatch[1] : "Analyzing...",
+      //     rawText: text
+      //   });
+      // }
+
+      let fullResponse = "";
       for await (let response of result.stream) {
-        buffer.push(response.text());
-        
-        // Try to parse the markdown response into sections
-        const text = buffer.join("");
-        
-        // Extract sections using regex
-        const diagnosisMatch = text.match(/🩺\s*\*\*Diagnosis\*\*:\s*(.*?)(?=🚑|\n\n|$)/s);
-        const measuresMatch = text.match(/🚑\s*\*\*Immediate Measures\*\*:(.*?)(?=🛡|\n\n|$)/s);
-        const preventionMatch = text.match(/🛡\s*\*\*Long-Term Prevention\*\*:(.*?)(?=🥗|\n\n|$)/s);
-        const dietMatch = text.match(/🥗\s*\*\*Recommended Diet\*\*:(.*?)(?=\n\n|$)/s);
-        
-        // Update state with parsed sections
-        setResults({
-          diagnosis: diagnosisMatch ? diagnosisMatch[1].trim() : "Analyzing...",
-          measures: measuresMatch ? measuresMatch[1] : "Analyzing...",
-          prevention: preventionMatch ? preventionMatch[1] : "Analyzing...",
-          diet: dietMatch ? dietMatch[1] : "Analyzing...",
-          rawText: text
-        });
+        fullResponse += await response.text();
       }
+
+      console.log("Full AI Response:", fullResponse);
+
+      // Debugging: Check if fullResponse is correctly logged
+      if (!fullResponse) {
+        console.error("Full AI Response is empty!");
+      }
+
+      // Improved regex patterns with better matching
+      const diagnosisMatch = fullResponse.match(/🩺\s*\*\*Diagnosis\*\*:\s*(.*?)(?=\n|\r|$)/);
+      const measuresMatch = fullResponse.match(/🚑\s*\*\*Immediate Measures.*?\*\*:\s*([\s\S]*?)(?=🛡|\*\*Again|$)/);
+      const preventionMatch = fullResponse.match(/🛡\s*\*\*Long-Term Prevention.*?\*\*:\s*([\s\S]*?)(?=🥗|\*\*Again|$)/);
+      const dietMatch = fullResponse.match(/🥗\s*\*\*Recommended Diet.*?\*\*:\s*([\s\S]*?)(?=\*\*Again|$)/);
+
+      // Debugging: Log matches
+      console.log("Diagnosis Match:", diagnosisMatch ? diagnosisMatch[1] : "Not detected");
+      console.log("Measures Match:", measuresMatch ? measuresMatch[1] : "Not detected");
+      console.log("Prevention Match:", preventionMatch ? preventionMatch[1] : "Not detected");
+      console.log("Diet Match:", dietMatch ? dietMatch[1] : "Not detected");
+
+      // Set results after extracting the data
+      setResults({
+        diagnosis: diagnosisMatch ? diagnosisMatch[1].trim() : "Not detected",
+        measures: measuresMatch ? measuresMatch[1].trim() : "Not detected",
+        prevention: preventionMatch ? preventionMatch[1].trim() : "Not detected",
+        diet: dietMatch ? dietMatch[1].trim() : "Not detected",
+        rawText: fullResponse
+      });
+
     } catch (error) {
       setResults({
         diagnosis: "Error occurred",
@@ -123,6 +157,44 @@ const SkinDiseaseAnalyzer = () => {
     }
   };
 
+  console.log("results ",results)
+
+  const speakOverallResult = () => {
+    if ("speechSynthesis" in window) {
+      const combinedText = `
+        Diagnosis: ${results.diagnosis}. 
+        Immediate Measures: ${results.measures.replace(/<\/?[^>]+(>|$)/g, "")}. 
+        Long-Term Prevention: ${results.prevention.replace(/<\/?[^>]+(>|$)/g, "")}. 
+        Recommended Diet: ${results.diet.replace(/<\/?[^>]+(>|$)/g, "")}.
+      `;
+  
+      const utterance = new SpeechSynthesisUtterance(combinedText);
+      utterance.lang = "en-US"; // Set language
+      utterance.rate = 1; // Adjust speech speed
+      utterance.pitch = 1; // Adjust pitch
+  
+      // Start speech synthesis
+      window.speechSynthesis.cancel(); // Stop any previous speech
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+  
+  //Function to stop speech
+  const stopSpeech = () => {
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel(); // Stop speech immediately
+    }
+  };
+  
+  useEffect(() => {
+    if (results) {
+      speakOverallResult();
+    }
+  }, [results]);
+
+
+  
+
   return (
     <div className="mx-auto p-6 bg-gray-50 rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-700">
@@ -131,7 +203,7 @@ const SkinDiseaseAnalyzer = () => {
       
       {/* Upload Section */}
       <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-blue-600">Upload Image</h2>
+        
         
         <form onSubmit={analyzeImage} className="space-y-4">
           {/* Image Upload */}
@@ -189,8 +261,15 @@ const SkinDiseaseAnalyzer = () => {
         </div>
       ) : results ? (
         <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center">
           <h2 className="text-xl font-semibold mb-4 text-blue-600">Analysis Results</h2>
-          
+          <button
+            onClick={stopSpeech}
+            className="bg-red-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-red-700 transition flex items-center justify-center ml-auto"
+          >
+            🔇 Stop Audio
+          </button>
+          </div>
           <div className="space-y-6">
             {/* Diagnosis Section */}
             <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
@@ -234,6 +313,7 @@ const SkinDiseaseAnalyzer = () => {
           <p>Upload an image and click "Analyze" to see results here</p>
         </div>
       )}
+
     </div>
   );
 };

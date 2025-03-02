@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Github, Link } from 'lucide-react';
+import {toast} from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'
 // import Link from 'react-router-dom';
 
 const Signin = () => {
@@ -12,10 +14,38 @@ const Signin = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Sign in with:', { email, password, rememberMe });
-    // Add authentication logic here
+    
+    try{
+      const response = await fetch('http://localhost:4000/api/users/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({email, password}),
+      });
+
+      const data = await response.json();
+
+      if(response.ok){
+        localStorage.setItem('token', data.token);
+        
+        // Show success toast
+        toast.success('Login Successful!', {position: 'top-right', autoClose: 3000});
+
+        // Redirect to dashboard after a short dealy
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 2000);
+      }else{
+        // Show error tast
+        toast.error(data.message || 'Invalid credentials', {position: 'top-right', autoClose: 3000});
+      }
+    }catch(error){
+      console.error('Login error: ', error);
+      toast.error('Something went wrong.  Please try again.', {position: 'top-right', autoClose: 3000});
+    }
   };
 
   return (

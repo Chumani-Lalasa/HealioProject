@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiUser } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaGithub } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const Signup = () => {
   // Form state
@@ -179,9 +180,9 @@ const Signup = () => {
             <h2 className="text-3xl font-extrabold text-gray-900">Create an account</h2>
             <p className="mt-2 text-sm text-gray-600">
               Or{' '}
-              <a href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link to="/signin" className="font-medium text-blue-600 hover:text-blue-500">
                 already have an account?
-              </a>
+              </Link>
             </p>
           </div>
           

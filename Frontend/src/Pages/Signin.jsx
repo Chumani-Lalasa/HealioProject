@@ -184,12 +184,10 @@ const Signin = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
-                {/* <Link to='/signup'>
+              <span to='/signup' className="font-medium text-indigo-600 hover:text-indigo-500">
+                {/* <Link to='/signup'>Sign up</Link> */}
                 Sign up
-                </Link> */}
-                Sign up
-              </a>
+              </span>
             </p>
           </div>
         </div>

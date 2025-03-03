@@ -58,6 +58,37 @@ const LandingPage = () => {
       link: "/dashboard/reminders"
     }
   ];
+
+  // Sample data for health metrics over time
+  const healthData = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [
+      {
+        name: 'Heart Rate',
+        color: 'bg-red-500',
+        data: [68, 72, 70, 74, 71, 69, 72]
+      },
+      {
+        name: 'Steps',
+        color: 'bg-green-500',
+        data: [7200, 6500, 7800, 8200, 8500, 8600, 8745]
+      },
+      {
+        name: 'Sleep Quality',
+        color: 'bg-indigo-500',
+        data: [78, 75, 76, 73, 74, 71, 72]
+      }
+    ]
+  };
+
+  // Calculate percentage values for the graph
+  const normalizedData = healthData.datasets.map(dataset => {
+    const maxValue = Math.max(...dataset.data);
+    return {
+      ...dataset,
+      normalizedData: dataset.data.map(value => (value / maxValue) * 100)
+    };
+  });
   
   // Auto-slider for testimonials
 //   useEffect(() => {
@@ -69,7 +100,7 @@ const LandingPage = () => {
 //   }, [testimonials.length]);
   
   const handleGetStarted = () => {
-    // navigate('/signup');
+    navigate('/signup');
   };
   
 //   const handleFeatureClick = (link) => {
@@ -96,7 +127,10 @@ const LandingPage = () => {
                 <li><a href="#features" className="hover:text-blue-600 transition duration-300">Features</a></li>
                 <li><a href="#how-it-works" className="hover:text-blue-600 transition duration-300">How It Works</a></li>
                 <li><a href="#testimonials" className="hover:text-blue-600 transition duration-300">Testimonials</a></li>
-                <li><a href="#" className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full font-medium hover:shadow-lg transition duration-300">Sign Up</a></li>
+                <li>
+                  <Link to='/signup' className="bg-gradient-to-r from-blue-600 to-blue-400 text-white px-6 py-2 rounded-full font-medium hover:shadow-lg transition duration-300">
+                  Sign Up</Link>
+                </li>
               </ul>
             </nav>
             <div className="md:hidden flex items-center">
@@ -112,7 +146,7 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="bg-blue-50 pt-32 pb-20 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 opacity-10"></div>
+        <div className="absolute top-0 right-0 w-90 h-90 rounded-full bg-gradient-to-r from-blue-600 to-blue-400 opacity-10"></div>
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-1/2 md:pr-10 mb-10 md:mb-0 text-center md:text-left">
@@ -131,11 +165,85 @@ const LandingPage = () => {
                 </a>
               </div>
             </div>
-            <div className="md:w-1/2">
+            {/* <div className="md:w-1/2">
               <img src="/api/placeholder/400/320" alt="Health Dashboard" className="rounded-xl shadow-xl" />
+            </div> */}
+            <div className="p-4 md:p-6">
+              <div className="relative h-64">
+              {/* Y-axis label */}
+              <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500">
+                <span>Max</span>
+                <span>Min</span>
+              </div>
+
+              {/* Graph area */}
+              <div className="ml-10 h-full">
+                <div className="relative h-full flex items-end">
+                  {/* Background grid lines */}
+                  <div className="absolute inset-0">
+                    <div className="border-b border-gray-200 h-1/4"></div>
+                    <div className="border-b border-gray-200 h-1/4"></div>
+                    <div className="border-b border-gray-200 h-1/4"></div>
+                    <div className="border-b border-gray-200 h-1/4"></div>
+                  </div>
+
+                  {/* Data lines */}
+                  {normalizedData.map((dataset, datasetIndex) => (
+                    <div key={dataset.name} className="absolute inset-0">
+                      <svg className="w-full h-full" preserveAspectRatio="none">
+                        <polyline
+                          points={dataset.normalizedData.map((value, index) => 
+                            `${(index / (dataset.normalizedData.length - 1)) * 100}% ${100 - value}%`
+                          ).join(' ')}
+                          fill="none"
+                          stroke={dataset.color.replace('bg-', 'var(--')}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ 
+                            '--red-500': '#ef4444', 
+                            '--green-500': '#22c55e', 
+                            '--indigo-500': '#6366f1'
+                          }}
+                        />
+                      </svg>
+                      
+                      {/* Data points */}
+                      {dataset.normalizedData.map((value, index) => (
+                        <div 
+                          key={index}
+                          className={`absolute w-2 h-2 ${dataset.color} rounded-full transform -translate-x-1 -translate-y-1`}
+                          style={{
+                            left: `${(index / (dataset.normalizedData.length - 1)) * 100}%`,
+                            top: `${100 - value}%`
+                          }}
+                        ></div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* X-axis labels */}
+                <div className="flex justify-between mt-2 text-xs text-gray-500">
+                  {healthData.labels.map((label, index) => (
+                    <div key={index}>{label}</div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-4 mt-6 justify-center">
+          {normalizedData.map((dataset) => (
+            <div key={dataset.name} className="flex items-center">
+              <div className={`w-3 h-3 ${dataset.color} rounded-full mr-2`}></div>
+              <span className="text-sm text-gray-700">{dataset.name}</span>
+            </div>
+          ))}
         </div>
+            
+          </div>
+        </div></div>
       </section>
 
       {/* Features Section */}
@@ -321,9 +429,9 @@ const LandingPage = () => {
           <p className="text-xl mb-10 max-w-2xl mx-auto">Join 10,000+ Users on HealthTrack Today!</p>
           
           <div className="flex flex-wrap justify-center gap-4 mb-12">
-            <a href="#" className="bg-white text-blue-600 px-8 py-3 rounded-full font-medium hover:shadow-lg transform hover:-translate-y-1 transition duration-300">
+            <Link to="/signup" className="bg-white text-blue-600 px-8 py-3 rounded-full font-medium hover:shadow-lg transform hover:-translate-y-1 transition duration-300">
               Get Started
-            </a>
+            </Link>
             <a href="#" className="border-2 border-white text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:bg-opacity-10 transition duration-300">
               Learn More
             </a>

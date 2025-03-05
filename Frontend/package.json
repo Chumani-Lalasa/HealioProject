@@ -12,6 +12,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.22.0",
     "@tailwindcss/vite": "^4.0.9",
+    "axios": "^1.8.1",
     "base64-js": "^1.5.1",
     "lucide-react": "^0.476.0",
     "markdown-it": "^14.1.0",

@@ -1,4 +1,5 @@
 import './App.css'
+import VoiceAssistant from './Pages/VoiceAssistant'
 import AppRoutes from './Routes/AppRoutes'
 
 function App() {
@@ -7,6 +8,7 @@ function App() {
     <>
       {/* <SkinDiseaseAnalyzer /> */}
       <AppRoutes />
+      {/* <VoiceAssistant /> */}
       {/* <Signup /> */}
       {/* <Signin /> */}
     </>

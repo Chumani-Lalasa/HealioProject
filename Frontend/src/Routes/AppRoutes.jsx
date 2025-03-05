@@ -19,14 +19,14 @@ const AppLayout = () => {
   const location = useLocation();  // Get current route
 
   // Hide Sidebar only on the home page
-  const hideSidebar = location.pathname === '/home';
+  const hideSidebar = location.pathname === '/';
 
   return (
     <div className="flex">
       {!hideSidebar && <Sidebar />}  {/* Render Sidebar only when not on home page */}
       <div className={`flex-1 p-6 ${!hideSidebar ? 'ml-64' : ''}`}>  
         <Routes>
-          <Route path="/home" element={<LandingPage />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<HealthTrackDashboard />} />
           <Route path="/reports" element={<HealthReportForm />} />
           <Route path="/chatbot" element={<Chatbot />} />

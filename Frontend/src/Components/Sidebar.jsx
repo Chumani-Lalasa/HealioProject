@@ -37,7 +37,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     {
       name: 'Home',
       icon: <HomeIcon size={20} />,
-      path: '/home'
+      path: '/'
     },
     {
       name: 'Dashboard',

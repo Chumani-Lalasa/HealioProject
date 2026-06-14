@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend-build:
+    name: Frontend — Install & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+  backend-install:
+    name: Backend — Install & Syntax Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Syntax check
+        run: node --check server.js

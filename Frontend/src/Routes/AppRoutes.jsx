@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Sidebar from '../Components/Sidebar';
 import LandingPage from '../Pages/LandingPage';
 import Dashboard from '../Components/Dashboard';
@@ -9,6 +9,7 @@ import Settings from '../Pages/Settings';
 import Signin from '../Pages/Signin';
 import Signup from '../Pages/Signup';
 import SkinDiseaseAnalyzer from '../Pages/SkinDiseaseAnalyzer';
+import PrivateRoute from './PrivateRoute';
 
 const AUTH_ROUTES = ['/signin', '/signup'];
 const NO_SIDEBAR_ROUTES = ['/', ...AUTH_ROUTES];
@@ -50,23 +51,20 @@ const AppLayout = () => {
         )}
         <Routes>
           <Route path="/"             element={<LandingPage />} />
-          <Route path="/dashboard"    element={<Dashboard />} />
-          <Route path="/reports"      element={<HealthReportForm />} />
-          <Route path="/chatbot"      element={<Chatbot />} />
-          <Route path="/settings"     element={<Settings />} />
           <Route path="/signin"       element={<Signin />} />
           <Route path="/signup"       element={<Signup />} />
-          <Route path="/skinanalysis" element={<SkinDiseaseAnalyzer />} />
+          <Route path="/dashboard"    element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          <Route path="/reports"      element={<PrivateRoute><HealthReportForm /></PrivateRoute>} />
+          <Route path="/chatbot"      element={<PrivateRoute><Chatbot /></PrivateRoute>} />
+          <Route path="/settings"     element={<PrivateRoute><Settings /></PrivateRoute>} />
+          <Route path="/skinanalysis" element={<PrivateRoute><SkinDiseaseAnalyzer /></PrivateRoute>} />
+          <Route path="*"             element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
   );
 };
 
-const AppRoutes = () => (
-  <Router>
-    <AppLayout />
-  </Router>
-);
+const AppRoutes = () => <AppLayout />;
 
 export default AppRoutes;

@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiUser, FiMoon, FiGlobe, FiBell, FiLock, FiLogOut } from 'react-icons/fi';
 
 const Settings = () => {
+  const navigate = useNavigate();
+
   // User profile state
   const [userProfile, setUserProfile] = useState({
     name: '',
@@ -31,36 +34,19 @@ const Settings = () => {
 
   // Fetch user data on component mount
   useEffect(() => {
-    // Mock API call - replace with actual fetch
     const fetchUserData = async () => {
       try {
-        // const response = await fetch('/api/user/profile');
-        // const data = await response.json();
-        
-        // Mock data for demonstration
-        const data = {
-          name: 'John Doe',
-          age: 32,
-          gender: 'Male',
-          email: 'john.doe@example.com',
-          profilePicture: null,
-          preferences: {
-            darkMode: false,
-            language: 'English'
-          },
-          notifications: {
-            healthAlerts: true,
-            medicationReminders: true,
-            doctorVisitReminders: true
-          }
-        };
+        const stored = localStorage.getItem('user');
+        const data = stored ? JSON.parse(stored) : {};
+        if (!data.preferences) data.preferences = { darkMode: false, language: 'English' };
+        if (!data.notifications) data.notifications = { healthAlerts: true, medicationReminders: true, doctorVisitReminders: true };
         
         setUserProfile({
-          name: data.name,
-          age: data.age,
-          gender: data.gender,
-          email: data.email,
-          profilePicture: data.profilePicture
+          name: data.fullName || data.name || '',
+          age: data.age || '',
+          gender: data.gender || '',
+          email: data.email || '',
+          profilePicture: data.profilePicture || null
         });
         
         setPreferences(data.preferences);
@@ -205,11 +191,9 @@ const Settings = () => {
 
   // Handle logout
   const handleLogout = () => {
-    // Mock logout - replace with actual implementation
-    // localStorage.removeItem('token');
-    alert('Logging out...');
-    // Redirect to login page
-    // window.location.href = '/login';
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/signin');
   };
 
   return (

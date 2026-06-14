@@ -17,8 +17,11 @@ healthRoutes.post("/add-report", authMiddleware, async (req, res) => {
   });
 
 // ✅ Get all reports for a user
-healthRoutes.get("/reports/:userId", async (req, res) => {
+healthRoutes.get("/reports/:userId", authMiddleware, async (req, res) => {
   try {
+    if (req.user.id !== req.params.userId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
     const reports = await HealthReport.find({ userId: req.params.userId }).sort({ createdAt: -1 });
     res.status(200).json(reports);
   } catch (error) {
@@ -27,7 +30,7 @@ healthRoutes.get("/reports/:userId", async (req, res) => {
 });
 
 // ✅ AI Analysis Logic
-healthRoutes.post("/analyze", async (req, res) => {
+healthRoutes.post("/analyze", authMiddleware, async (req, res) => {
   try {
     const { heartRate, bloodPressure, bloodSugar, sleepHours, steps } = req.body;
 

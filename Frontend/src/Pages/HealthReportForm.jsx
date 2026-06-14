@@ -59,32 +59,38 @@ const HealthReportForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
+    const token = localStorage.getItem('token');
+    const authHeader = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+
     try {
-      // Call to Health Data API to store information
-      await fetch('/api/health-data', {
+      // Save the health report
+      await fetch(`${import.meta.env.VITE_API_URL}/api/health/add-report`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: authHeader,
         body: JSON.stringify(formData),
       });
-      
-      // Call to AI-based Health Analysis API
-      const response = await fetch('/api/health-analysis', {
+
+      // Run AI analysis using available vitals
+      const analysisPayload = {
+        heartRate: Number(formData.heartRate),
+        bloodPressure: `${formData.bloodPressureSystolic}/${formData.bloodPressureDiastolic}`,
+        bloodSugar: 100,
+        sleepHours: Number(formData.sleepHours),
+        steps: 7000,
+      };
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/health/analyze`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        headers: authHeader,
+        body: JSON.stringify(analysisPayload),
       });
-      
+
       const result = await response.json();
       setAnalysisData(result);
       setShowAnalysis(true);
     } catch (error) {
       console.error('Error submitting health data:', error);
-      // Handle error
     } finally {
       setIsLoading(false);
     }

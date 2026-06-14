@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { FiEye, FiEyeOff, FiMail, FiLock, FiUser } from 'react-icons/fi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook, FaGithub } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const Signup = () => {
+  const navigate = useNavigate();
+
   // Form state
   const [formData, setFormData] = useState({
     fullName: '',
@@ -118,7 +121,7 @@ const Signup = () => {
       setIsLoading(true);
 
       try{
-        const response = await fetch('http://localhost:4000/api/users/register', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -129,13 +132,15 @@ const Signup = () => {
         const data = await response.json();
 
         if(response.ok){
-          alert('Account created successfully');
-          window.location.href = '/signin';
+          toast.success('Account created successfully!');
+          setTimeout(() => navigate('/signin'), 2000);
         }else{
+          toast.error(data.message || 'Registration failed.');
           setErrors({api: data.message});
         }
       }catch(error){
-        setErrors({api: 'An error occurred.  Please try again.'});
+        toast.error('An error occurred. Please try again.');
+        setErrors({api: 'An error occurred. Please try again.'});
       }finally{
         setIsLoading(false);
       }

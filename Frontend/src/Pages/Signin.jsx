@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Github, Link } from 'lucide-react';
-import {toast} from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'
-// import Link from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Github } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Signin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +18,7 @@ const Signin = () => {
     e.preventDefault();
     
     try{
-      const response = await fetch('http://localhost:4000/api/users/login/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,6 +30,7 @@ const Signin = () => {
 
       if(response.ok){
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         
         // Show success toast
         toast.success('Login Successful!', {position: 'top-right', autoClose: 3000});
@@ -184,10 +185,9 @@ const Signin = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <span to='/signup' className="font-medium text-indigo-600 hover:text-indigo-500">
-                {/* <Link to='/signup'>Sign up</Link> */}
+              <Link to='/signup' className="font-medium text-indigo-600 hover:text-indigo-500">
                 Sign up
-              </span>
+              </Link>
             </p>
           </div>
         </div>

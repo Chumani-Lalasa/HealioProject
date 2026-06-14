@@ -1,478 +1,273 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Activity, Heart, Thermometer, TrendingUp, Plus, FileText, MessageSquare, Droplet, Moon } from 'lucide-react';
-// import { Heart, Calendar, MessageSquare, AlertTriangle, Settings, Home, FileText, Activity, Droplet, Moon, BarChart2, ChevronRight, Menu, X } from 'lucide-react';
-// import LoadingSpinner from './LoadingSpinner';
-import LoadingSpinner from './LoadSpinner';
-import HealthCard from './HealthTrackDashboard';
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Legend
+} from 'recharts';
+import {
+  Heart, Activity, Droplet, Moon, Thermometer,
+  TrendingUp, FileText, MessageSquare, Plus, ArrowUpRight, ArrowDownRight
+} from 'lucide-react';
+
+const MOCK_HEALTH = {
+  heartRate:     { value: 72,   unit: 'bpm',    status: 'normal',  delta: -3 },
+  bloodPressure: { systolic: 120, diastolic: 80, status: 'normal',  delta: -2 },
+  bloodSugar:    { value: 95,   unit: 'mg/dL',  status: 'normal',  delta: +1 },
+  steps:         { value: 8427, unit: 'steps',  status: 'good',    delta: +542 },
+  hydration:     { value: 65,   unit: '%',      status: 'moderate',delta: +5 },
+  sleepHours:    { value: 7.5,  unit: 'hrs',    status: 'good',    delta: +0.5 },
+};
+
+const TREND_DATA = {
+  heartRate:  [68, 72, 75, 71, 69, 72, 70].map((v, i) => ({ day: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], value: v })),
+  bloodSugar: [92, 95, 98, 94, 93, 97, 95].map((v, i) => ({ day: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], value: v })),
+  steps:      [6500,7200,8100,9500,7800,8300,8427].map((v, i) => ({ day: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], value: v })),
+  calories:   [1750,1820,1950,1800,1900,2100,1650].map((v, i) => ({ day: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i], value: v })),
+};
+
+const ACTIVITY_DATA = [
+  { name: 'Walking', value: 45 },
+  { name: 'Running', value: 15 },
+  { name: 'Cycling', value: 20 },
+  { name: 'Swimming', value: 10 },
+  { name: 'Other', value: 10 },
+];
+
+const PIE_COLORS = ['#0EA5E9', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'];
+
+const STATUS_BADGE = {
+  normal:   'bg-emerald-100 text-emerald-700',
+  good:     'bg-sky-100 text-sky-700',
+  moderate: 'bg-amber-100 text-amber-700',
+  high:     'bg-red-100 text-red-700',
+};
+
+const MetricCard = ({ icon, label, value, unit, status, delta, color }) => (
+  <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between mb-4">
+      <div className={`p-2.5 rounded-xl ${color}`}>{icon}</div>
+      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[status] || STATUS_BADGE.normal}`}>
+        {status}
+      </span>
+    </div>
+    <div className="flex items-end gap-2">
+      <span className="text-3xl font-bold text-gray-900">{typeof value === 'number' ? value.toLocaleString() : value}</span>
+      <span className="text-sm text-gray-400 mb-1">{unit}</span>
+    </div>
+    <div className="flex items-center justify-between mt-2">
+      <p className="text-sm text-gray-500">{label}</p>
+      {delta !== undefined && (
+        <span className={`flex items-center text-xs font-medium ${delta >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+          {delta >= 0 ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+          {Math.abs(delta)} {unit}
+        </span>
+      )}
+    </div>
+  </div>
+);
 
 const Dashboard = () => {
-  const [loading, setLoading] = useState(true);
-  const [healthData, setHealthData] = useState(null);
-  const [trendData, setTrendData] = useState([]);
   const [activeMetric, setActiveMetric] = useState('heartRate');
+  const [trendData, setTrendData] = useState(TREND_DATA.heartRate);
 
-  // Sample user data
-  const userData = {
-    name: "Alex Johnson",
-    avatar: "/api/placeholder/80/80",
-    heartRate: 72,
-    bloodPressure: { systolic: 122, diastolic: 81 },
-    bloodSugar: 105,
-    caloriesBurned: 1250,
-    steps: 8742,
-    hydration: 65,
-    sleepHours: 7.5
-  };
-
-  const healthHistory = {
-    heartRate: [68, 72, 75, 71, 69, 72, 70],
-    bloodPressure: [
-      {systolic: 120, diastolic: 80},
-      {systolic: 122, diastolic: 81},
-      {systolic: 118, diastolic: 79},
-      {systolic: 121, diastolic: 82},
-      {systolic: 123, diastolic: 83},
-      {systolic: 119, diastolic: 80},
-      {systolic: 122, diastolic: 81}
-    ],
-    steps: [6500, 7200, 8100, 9500, 7800, 8300, 8742]
-  };
-  
-  // COLORS for charts
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-  
   useEffect(() => {
-    // Fetch user health data
-    const fetchHealthData = async () => {
-      try {
-        setLoading(true);
-        // Replace with your actual API endpoint
-        const response = await fetch('/api/health/summary');
-        const data = await response.json();
-        setHealthData(data);
-        
-        // Fetch trend data for the active metric
-        const trendResponse = await fetch(`/api/health/trends?metric=${activeMetric}`);
-        const trendData = await trendResponse.json();
-        setTrendData(trendData);
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching health data:', error);
-        setLoading(false);
-      }
-    };
-    
-    fetchHealthData();
+    setTrendData(TREND_DATA[activeMetric] || TREND_DATA.heartRate);
   }, [activeMetric]);
-  
-  // Mock data for demo purposes (remove in production)
-  const mockHealthData = {
-    heartRate: { value: 72, unit: 'bpm', status: 'normal' },
-    bloodPressure: { systolic: 120, diastolic: 80, status: 'normal' },
-    bloodSugar: { value: 95, unit: 'mg/dL', status: 'normal' },
-    caloriesBurned: { value: 1850, unit: 'cal', status: 'good' },
-    sleepHours: { value: 7.5, unit: 'hours', status: 'good' },
-    steps: { value: 8427, unit: 'steps', status: 'good' }
-  };
-  
-  const mockTrendData = {
-    heartRate: [
-      { day: 'Mon', value: 68 },
-      { day: 'Tue', value: 72 },
-      { day: 'Wed', value: 76 },
-      { day: 'Thu', value: 74 },
-      { day: 'Fri', value: 72 },
-      { day: 'Sat', value: 75 },
-      { day: 'Sun', value: 73 }
-    ],
-    bloodPressure: [
-      { day: 'Mon', systolic: 118, diastolic: 78 },
-      { day: 'Tue', systolic: 120, diastolic: 80 },
-      { day: 'Wed', systolic: 122, diastolic: 82 },
-      { day: 'Thu', systolic: 119, diastolic: 79 },
-      { day: 'Fri', systolic: 121, diastolic: 81 },
-      { day: 'Sat', systolic: 118, diastolic: 78 },
-      { day: 'Sun', systolic: 120, diastolic: 80 }
-    ],
-    bloodSugar: [
-      { day: 'Mon', value: 92 },
-      { day: 'Tue', value: 95 },
-      { day: 'Wed', value: 98 },
-      { day: 'Thu', value: 94 },
-      { day: 'Fri', value: 93 },
-      { day: 'Sat', value: 97 },
-      { day: 'Sun', value: 95 }
-    ],
-    caloriesBurned: [
-      { day: 'Mon', value: 1750 },
-      { day: 'Tue', value: 1820 },
-      { day: 'Wed', value: 1950 },
-      { day: 'Thu', value: 1800 },
-      { day: 'Fri', value: 1900 },
-      { day: 'Sat', value: 2100 },
-      { day: 'Sun', value: 1650 }
-    ]
-  };
-  
-  // Use mock data if real data is not available
-  useEffect(() => {
-    if (!healthData && !loading) {
-      setHealthData(mockHealthData);
-      setTrendData(mockTrendData[activeMetric]);
-    }
-  }, [healthData, loading, activeMetric]);
-  
-  // Activity distribution data for pie chart
-  const activityData = [
-    { name: 'Walking', value: 45 },
-    { name: 'Running', value: 15 },
-    { name: 'Cycling', value: 20 },
-    { name: 'Swimming', value: 10 },
-    { name: 'Other', value: 10 }
+
+  const metricOptions = [
+    { key: 'heartRate', label: 'Heart Rate' },
+    { key: 'bloodSugar', label: 'Blood Sugar' },
+    { key: 'steps', label: 'Steps' },
+    { key: 'calories', label: 'Calories' },
   ];
-  
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-  
-  const renderLineChart = () => {
-    if (activeMetric === 'bloodPressure') {
-      return (
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={trendData || mockTrendData.bloodPressure}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="systolic" stroke="#8884d8" name="Systolic" />
-            <Line type="monotone" dataKey="diastolic" stroke="#82ca9d" name="Diastolic" />
-          </LineChart>
-        </ResponsiveContainer>
-      );
-    }
-    
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={trendData || mockTrendData[activeMetric]}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="day" />
-          <YAxis />
-          <Tooltip />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#8884d8" 
-            name={activeMetric === 'heartRate' ? 'Heart Rate (bpm)' : 
-                 activeMetric === 'bloodSugar' ? 'Blood Sugar (mg/dL)' : 
-                 'Calories Burned (cal)'} 
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+
+  const metrics = [
+    {
+      icon: <Heart size={20} className="text-rose-500" />,
+      label: 'Heart Rate',
+      value: MOCK_HEALTH.heartRate.value,
+      unit: MOCK_HEALTH.heartRate.unit,
+      status: MOCK_HEALTH.heartRate.status,
+      delta: MOCK_HEALTH.heartRate.delta,
+      color: 'bg-rose-50',
+    },
+    {
+      icon: <Activity size={20} className="text-sky-500" />,
+      label: 'Daily Steps',
+      value: MOCK_HEALTH.steps.value,
+      unit: MOCK_HEALTH.steps.unit,
+      status: MOCK_HEALTH.steps.status,
+      delta: MOCK_HEALTH.steps.delta,
+      color: 'bg-sky-50',
+    },
+    {
+      icon: <Thermometer size={20} className="text-violet-500" />,
+      label: 'Blood Sugar',
+      value: MOCK_HEALTH.bloodSugar.value,
+      unit: MOCK_HEALTH.bloodSugar.unit,
+      status: MOCK_HEALTH.bloodSugar.status,
+      delta: MOCK_HEALTH.bloodSugar.delta,
+      color: 'bg-violet-50',
+    },
+    {
+      icon: <Droplet size={20} className="text-blue-500" />,
+      label: 'Hydration',
+      value: MOCK_HEALTH.hydration.value,
+      unit: MOCK_HEALTH.hydration.unit,
+      status: MOCK_HEALTH.hydration.status,
+      delta: MOCK_HEALTH.hydration.delta,
+      color: 'bg-blue-50',
+    },
+    {
+      icon: <Moon size={20} className="text-indigo-500" />,
+      label: 'Sleep',
+      value: MOCK_HEALTH.sleepHours.value,
+      unit: MOCK_HEALTH.sleepHours.unit,
+      status: MOCK_HEALTH.sleepHours.status,
+      delta: MOCK_HEALTH.sleepHours.delta,
+      color: 'bg-indigo-50',
+    },
+    {
+      icon: <TrendingUp size={20} className="text-emerald-500" />,
+      label: 'Blood Pressure',
+      value: `${MOCK_HEALTH.bloodPressure.systolic}/${MOCK_HEALTH.bloodPressure.diastolic}`,
+      unit: 'mmHg',
+      status: MOCK_HEALTH.bloodPressure.status,
+      color: 'bg-emerald-50',
+    },
+  ];
+
+  const quickActions = [
+    { icon: <FileText size={18} />, label: 'Upload Report', to: '/reports', color: 'bg-sky-50 text-sky-700 hover:bg-sky-100' },
+    { icon: <MessageSquare size={18} />, label: 'Ask AI', to: '/chatbot', color: 'bg-violet-50 text-violet-700 hover:bg-violet-100' },
+    { icon: <Activity size={18} />, label: 'Log Activity', to: '#', color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+    { icon: <Plus size={18} />, label: 'Add Metric', to: '#', color: 'bg-amber-50 text-amber-700 hover:bg-amber-100' },
+  ];
+
+  const insights = [
+    { type: 'success', title: 'Great progress!', body: 'Your average heart rate has decreased by 3 bpm this week. Keep it up!' },
+    { type: 'warning', title: 'Drink more water', body: 'Hydration is at 65%. Try to reach your 2L daily goal by evening.' },
+    { type: 'info', title: 'Sleep quality improved', body: 'Sleep duration and quality improved by 15% compared to last month.' },
+  ];
+
+  const insightColors = {
+    success: 'bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800',
+    warning: 'bg-amber-50 border-l-4 border-amber-400 text-amber-800',
+    info:    'bg-sky-50 border-l-4 border-sky-500 text-sky-800',
   };
 
-  // Progress indicator component
-  const CircularProgress = ({ value, max, color, size = 120, icon, label }) => {
-    const radius = size / 2 - 10;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / max) * circumference;
-    
-    return (
-      <div className="flex flex-col items-center justify-center">
-        <div className="relative" style={{ width: size, height: size }}>
-          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            <circle
-              cx={size/2}
-              cy={size/2}
-              r={radius}
-              stroke="#e6e6e6"
-              strokeWidth="8"
-              fill="none"
-            />
-            <circle
-              cx={size/2}
-              cy={size/2}
-              r={radius}
-              stroke={color}
-              strokeWidth="8"
-              fill="none"
-              strokeDasharray={circumference}
-              strokeDashoffset={offset}
-              strokeLinecap="round"
-              transform={`rotate(-90 ${size/2} ${size/2})`}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {icon}
-            <span className="text-2xl font-bold">{value}</span>
-          </div>
-        </div>
-        <span className="mt-2 text-sm font-medium text-gray-600">{label}</span>
-      </div>
-    );
-  };
-  
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 mt-16">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Health Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          Welcome back! Here's an overview of your health metrics.
-        </p>
+    <div className="p-4 sm:p-6 lg:p-8 min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Health Dashboard</h1>
+        <p className="text-gray-500 text-sm mt-1">Welcome back! Here's an overview of your health metrics.</p>
       </div>
-      
-      {/* Quick Action Buttons */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
-        <button className="flex items-center justify-center p-4 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors">
-          <FileText className="mr-2" size={20} />
-          <span>Upload Report</span>
-        </button>
-        <button className="flex items-center justify-center p-4 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors">
-          <MessageSquare className="mr-2" size={20} />
-          <span>Ask AI</span>
-        </button>
-        <button className="flex items-center justify-center p-4 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors">
-          <Activity className="mr-2" size={20} />
-          <span>Log Activity</span>
-        </button>
-        <button className="flex items-center justify-center p-4 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-          <Plus className="mr-2" size={20} />
-          <span>Add Metric</span>
-        </button>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        {quickActions.map((a) => (
+          <a
+            key={a.label}
+            href={a.to}
+            className={`flex items-center justify-center gap-2 p-3.5 rounded-xl font-medium text-sm transition-colors ${a.color}`}
+          >
+            {a.icon} {a.label}
+          </a>
+        ))}
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {/* Heart Rate Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center">
-            <CircularProgress 
-              value={userData.heartRate} 
-              max={200} 
-              color="#FF5A5A" 
-              icon={<Heart size={24} color="#FF5A5A" className="mb-1" />}
-              label="Heart Rate (BPM)"
-            />
-          </div>
-          
-          {/* Blood Pressure Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Blood Pressure</h3>
-            <div className="flex justify-center items-center space-x-4">
-              <div className="text-center">
-                <span className="text-3xl font-bold text-red-500">{userData.bloodPressure.systolic}</span>
-                <p className="text-sm text-gray-600">Systolic</p>
-              </div>
-              <span className="text-xl font-bold text-gray-400">/</span>
-              <div className="text-center">
-                <span className="text-3xl font-bold text-blue-500">{userData.bloodPressure.diastolic}</span>
-                <p className="text-sm text-gray-600">Diastolic</p>
-              </div>
-            </div>
-            <div className="mt-4 h-4 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500"
-                style={{ width: `${(userData.bloodPressure.systolic / 180) * 100}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-1 text-xs text-gray-500">
-              <span>Normal</span>
-              <span>Elevated</span>
-              <span>High</span>
-            </div>
-          </div>
-          
-          {/* Blood Sugar Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Blood Sugar</h3>
-            <div className="flex justify-center mb-4">
-              <span className="text-4xl font-bold text-purple-600">{userData.bloodSugar}</span>
-              <span className="ml-1 text-sm self-end mb-1 text-gray-500">mg/dL</span>
-            </div>
-            <div className="relative h-16">
-              <div className="absolute inset-0 flex items-center">
-                <div className="h-1 w-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-500 rounded-full"></div>
-              </div>
-              <div 
-                className="absolute h-4 w-4 bg-white border-2 border-purple-600 rounded-full top-1/2 transform -translate-y-1/2"
-                style={{ left: `${(userData.bloodSugar / 250) * 100}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-1 text-xs text-gray-500">
-              <span>70</span>
-              <span>100</span>
-              <span>140</span>
-              <span>200+</span>
-            </div>
-          </div>
-          
-          {/* Activity Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Daily Activity</h3>
-            <div className="flex justify-between">
-              <div className="text-center">
-                <Activity size={24} className="mx-auto mb-2 text-orange-500" />
-                <span className="text-2xl font-bold text-gray-800">{userData.caloriesBurned}</span>
-                <p className="text-xs text-gray-500">calories</p>
-              </div>
-              <div className="h-16 w-px bg-gray-200"></div>
-              <div className="text-center">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-2 text-blue-500">
-                  <path d="M19 5.5v13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                  <line x1="7" y1="10" x2="17" y2="10"></line>
-                  <line x1="7" y1="14" x2="17" y2="14"></line>
-                  <line x1="7" y1="18" x2="12" y2="18"></line>
-                </svg>
-                <span className="text-2xl font-bold text-gray-800">{userData.steps.toLocaleString()}</span>
-                <p className="text-xs text-gray-500">steps</p>
-              </div>
-            </div>
-            <div className="mt-4 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-500"
-                style={{ width: `${(userData.steps / 10000) * 100}%` }}
-              ></div>
-            </div>
-            <p className="text-xs text-right mt-1 text-gray-500">87% of daily goal</p>
-          </div>
-          
-          {/* Hydration Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Hydration</h3>
-            <div className="relative w-32 h-32 mx-auto">
-              <svg viewBox="0 0 100 100">
-                <path 
-                  d="M50,10 C50,10 90,40 90,70 C90,85 75,95 50,95 C25,95 10,85 10,70 C10,40 50,10 50,10 Z" 
-                  fill="#EBF8FF"
-                  stroke="#4299E1"
-                  strokeWidth="2"
-                />
-                <path 
-                  d="M50,10 C50,10 90,40 90,70 C90,85 75,95 50,95 C25,95 10,85 10,70 C10,40 50,10 50,10 Z" 
-                  fill="#4299E1"
-                  transform={`translate(0,${100 - userData.hydration})`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <Droplet size={20} className="mx-auto text-blue-600" />
-                  <span className="text-2xl font-bold">{userData.hydration}%</span>
-                </div>
-              </div>
-            </div>
-            <p className="text-center text-sm mt-2 text-gray-600">1.3L / 2L daily goal</p>
-          </div>
-          
-          {/* Sleep Card */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4 text-center">Sleep Analysis</h3>
-            <div className="flex items-center justify-center mb-4">
-              <Moon size={24} className="mr-2 text-indigo-600" />
-              <span className="text-3xl font-bold">{userData.sleepHours}</span>
-              <span className="ml-1 text-sm self-end mb-1 text-gray-500">hours</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="w-full bg-gray-200 h-3 rounded-full">
-                <div className="bg-indigo-600 h-3 rounded-full" style={{ width: `${(userData.sleepHours / 9) * 100}%` }}></div>
-              </div>
-            </div>
-            <div className="flex justify-between mt-1 text-xs text-gray-500">
-              <span>Poor</span>
-              <span>Good</span>
-              <span>Excellent</span>
-            </div>
-            <div className="flex justify-between mt-4 text-xs">
-              <div className="text-center">
-                <div className="h-8 w-4 bg-indigo-200 mx-auto rounded-t-sm"></div>
-                <span>Deep</span>
-              </div>
-              <div className="text-center">
-                <div className="h-16 w-4 bg-indigo-400 mx-auto rounded-t-sm"></div>
-                <span>Light</span>
-              </div>
-              <div className="text-center">
-                <div className="h-6 w-4 bg-indigo-600 mx-auto rounded-t-sm"></div>
-                <span>REM</span>
-              </div>
-              <div className="text-center">
-                <div className="h-2 w-4 bg-gray-300 mx-auto rounded-t-sm"></div>
-                <span>Awake</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      
-      {/* Charts Section */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <h2 className="text-lg font-medium text-gray-900">
-            {activeMetric === 'heartRate' ? 'Heart Rate Trends' :
-             activeMetric === 'bloodPressure' ? 'Blood Pressure Trends' :
-             activeMetric === 'bloodSugar' ? 'Blood Sugar Trends' :
-             'Calories Burned Trends'}
-          </h2>
-          <div className="mt-2 sm:mt-0">
-            <select 
-              className="form-select rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              value={activeMetric}
-              onChange={(e) => setActiveMetric(e.target.value)}
-            >
-              <option value="heartRate">Heart Rate</option>
-              <option value="bloodPressure">Blood Pressure</option>
-              <option value="bloodSugar">Blood Sugar</option>
-              <option value="caloriesBurned">Calories Burned</option>
-            </select>
-          </div>
-        </div>
-        
-        {renderLineChart()}
+
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {metrics.map((m) => <MetricCard key={m.label} {...m} />)}
       </div>
-      
-      {/* Additional Health Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Activity Distribution */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-6">Activity Distribution</h2>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={activityData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Trend chart - spans 2 cols */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+            <h2 className="text-base font-semibold text-gray-900">Weekly Trends</h2>
+            <div className="flex flex-wrap gap-2">
+              {metricOptions.map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setActiveMetric(opt.key)}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                    activeMetric === opt.key
+                      ? 'bg-sky-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
-                  {activityData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+              <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: '#94A3B8' }} axisLine={false} tickLine={false} />
+              <Tooltip
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
+              />
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#0EA5E9"
+                strokeWidth={2.5}
+                dot={{ fill: '#0EA5E9', r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Activity pie chart */}
+        <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-900 mb-6">Activity Split</h2>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={ACTIVITY_DATA}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={80}
+                dataKey="value"
+                paddingAngle={3}
+              >
+                {ACTIVITY_DATA.map((_, i) => (
+                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="space-y-2 mt-2">
+            {ACTIVITY_DATA.map((a, i) => (
+              <div key={a.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: PIE_COLORS[i] }} />
+                  <span className="text-gray-600">{a.name}</span>
+                </div>
+                <span className="font-medium text-gray-800">{a.value}%</span>
+              </div>
+            ))}
           </div>
         </div>
-        
-        {/* Health Insights */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Health Insights</h2>
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 text-blue-800 rounded-md">
-              <h3 className="font-medium mb-1">Great progress!</h3>
-              <p className="text-sm">Your average heart rate has decreased by 5 bpm this week. Keep up the good work!</p>
+      </div>
+
+      {/* Health Insights */}
+      <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+        <h2 className="text-base font-semibold text-gray-900 mb-4">Health Insights</h2>
+        <div className="space-y-3">
+          {insights.map((ins) => (
+            <div key={ins.title} className={`p-4 rounded-xl ${insightColors[ins.type]}`}>
+              <p className="font-semibold text-sm mb-0.5">{ins.title}</p>
+              <p className="text-sm opacity-90">{ins.body}</p>
             </div>
-            <div className="p-4 bg-yellow-50 text-yellow-800 rounded-md">
-              <h3 className="font-medium mb-1">Improvement needed</h3>
-              <p className="text-sm">Your activity level is slightly below target. Try to add 20 minutes of walking each day.</p>
-            </div>
-            <div className="p-4 bg-green-50 text-green-800 rounded-md">
-              <h3 className="font-medium mb-1">Sleep quality improved</h3>
-              <p className="text-sm">Your sleep duration and quality have improved by 15% compared to last month.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
